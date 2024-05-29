@@ -21,26 +21,33 @@ public class Program {
 		try {
 			conn = DB.getConnection();
 			
+			conn.setAutoCommit(false); //ou executa tudo ou não executa nada
+			
 			st = conn.createStatement();
 			
 			int rows1 = st.executeUpdate(
 					"UPDATE seller "
 					+ "SET BaseSalary = 2090 "
 					+ "WHERE DepartmentId = 1"
-					);
-			
-			int x = 1;
-			if (x < 2) throw new SQLException("fake error");
-			
+					);			
+						
 			int rows2 = st.executeUpdate(
 					"UPDATE seller "
 					+ "SET BaseSalary = 3090 "
 					+ "WHERE DepartmentId = 2"
 					);
+			
+			conn.commit(); //fim da lógica de proteção
+			
 			System.out.println("Rows 1 " + rows1);
 			System.out.println("Rows 2 " + rows2);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			try {
+				conn.rollback();
+				throw new DbException("Transaction rolled back! Caused by: " + e.getMessage());
+			} catch (SQLException e1) {
+				throw new DbException("Error trying to rollback! Caused by: " + e1.getMessage());
+			}
 		} finally {
 			DB.closeStatement(st);
 			DB.closeConnection();
